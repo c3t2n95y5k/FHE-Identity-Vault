@@ -93,7 +93,11 @@ const IdentityCard = ({
             </Button>
           </div>
           <div className="text-2xl font-bold">
-            {showNetWorth ? `$${netWorth}` : "••••••••"}
+            {showNetWorth
+              ? netWorth
+                ? `$${netWorth}`
+                : "Encrypted"
+              : "••••••••"}
           </div>
         </div>
 

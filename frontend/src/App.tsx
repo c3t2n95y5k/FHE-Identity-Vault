@@ -9,6 +9,7 @@ import { config } from '@/lib/wagmi';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Voting from "./pages/Voting";
+import VotingDetail from "./pages/VotingDetail";
 import Identity from "./pages/IdentityNew";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/voting" element={<Voting />} />
+              <Route path="/voting/:votingId" element={<VotingDetail />} />
               <Route path="/identity" element={<Identity />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

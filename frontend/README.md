@@ -1,10 +1,10 @@
-# FHE Identity & Voting Platform
+# VeilCivic
 
-Privacy-preserving identity management and encrypted voting system powered by Zama's Fully Homomorphic Encryption (FHE).
+VeilCivic delivers privacy-preserving identity management and encrypted voting powered by Zama's Fully Homomorphic Encryption (FHE).
 
 ## Overview
 
-This platform combines encrypted identity management (KYC) with privacy-preserving voting, enabling secure on-chain governance without revealing sensitive data.
+The platform combines encrypted identity (KYC) flows with privacy-first governance so communities can coordinate securely without exposing sensitive data.
 
 ### Key Features
 

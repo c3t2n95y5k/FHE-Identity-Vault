@@ -2,22 +2,60 @@ import { hexlify, getAddress } from 'ethers';
 
 declare global {
   interface Window {
+    relayerSDK?: {
+      initSDK: () => Promise<void>;
+      createInstance: (config: Record<string, unknown>) => Promise<any>;
+      SepoliaConfig: Record<string, unknown>;
+    };
     ethereum?: any;
     okxwallet?: any;
-    fhevm?: any;
   }
 }
 
 // FHE instance singleton
 let fhevmInstance: any = null;
-let initPromise: Promise<any> | null = null;
+let sdkPromise: Promise<any> | null = null;
 
-// Sepolia network configuration
-const SEPOLIA_CONFIG = {
-  chainId: 11155111,
-  networkUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
-  gatewayUrl: 'https://gateway.sepolia.zama.ai',
-  aclAddress: '0xFee8407e2f5e3Ee68ad77cAE98c434e637f516e5',
+// Use the UMD build so the SDK exposes window.relayerSDK, matching fhe-computation-market setup
+const SDK_URL = 'https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.umd.cjs';
+
+/**
+ * Dynamically load Zama FHE SDK from CDN
+ */
+const loadSdk = async (): Promise<any> => {
+  if (typeof window === 'undefined') {
+    throw new Error('FHE SDK requires browser environment');
+  }
+
+  if (window.relayerSDK) {
+    return window.relayerSDK;
+  }
+
+  if (!sdkPromise) {
+    sdkPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${SDK_URL}"]`) as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve(window.relayerSDK));
+        existing.addEventListener('error', () => reject(new Error('Failed to load FHE SDK')));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = SDK_URL;
+      script.async = true;
+      script.onload = () => {
+        if (window.relayerSDK) {
+          resolve(window.relayerSDK);
+        } else {
+          reject(new Error('relayerSDK unavailable after load'));
+        }
+      };
+      script.onerror = () => reject(new Error('Failed to load FHE SDK'));
+      document.body.appendChild(script);
+    });
+  }
+
+  return sdkPromise;
 };
 
 /**
@@ -27,44 +65,53 @@ export const initFHE = async (): Promise<any> => {
   // Return existing instance if already initialized
   if (fhevmInstance) return fhevmInstance;
 
-  // Return pending initialization if in progress
-  if (initPromise) return initPromise;
+  if (typeof window === 'undefined') {
+    throw new Error('FHE SDK requires browser environment');
+  }
 
-  initPromise = (async () => {
-    try {
-      console.log('🔧 Initializing FHE SDK...');
+  try {
+    console.log('🔧 Initializing FHE SDK...');
 
-      // Get Ethereum provider
-      const ethereumProvider = window.okxwallet || window.ethereum;
-      if (!ethereumProvider) {
-        throw new Error('Ethereum provider not found. Please connect your wallet first.');
-      }
+    // Get Ethereum provider - support multiple wallet types
+    // Priority: window.ethereum > window.okxwallet.provider > window.okxwallet
+    const ethereumProvider =
+      window.ethereum ||
+      (window as any).okxwallet?.provider ||
+      window.okxwallet ||
+      (window as any).coinbaseWalletExtension;
 
-      // Dynamic import from CDN
-      const { createInstance } = await import(
-        'https://cdn.jsdelivr.net/npm/fhevmjs@0.5.3/+esm'
-      );
-
-      // Create FHE instance with Sepolia config
-      fhevmInstance = await createInstance({
-        chainId: SEPOLIA_CONFIG.chainId,
-        networkUrl: SEPOLIA_CONFIG.networkUrl,
-        gatewayUrl: SEPOLIA_CONFIG.gatewayUrl,
-        aclAddress: SEPOLIA_CONFIG.aclAddress,
-        network: ethereumProvider,
-      });
-
-      console.log('✅ FHE instance created for Sepolia');
-
-      return fhevmInstance;
-    } catch (error) {
-      console.error('❌ Failed to initialize FHE:', error);
-      initPromise = null; // Reset so it can retry
-      throw error;
+    if (!ethereumProvider) {
+      throw new Error('Ethereum provider not found. Please connect your wallet first.');
     }
-  })();
 
-  return initPromise;
+    console.log('🔌 Using Ethereum provider:', {
+      isOKX: !!(window as any).okxwallet,
+      isMetaMask: !!(window.ethereum as any)?.isMetaMask,
+    });
+
+    // Load SDK from CDN
+    const sdk = await loadSdk();
+    if (!sdk) {
+      throw new Error('Failed to load FHE SDK');
+    }
+
+    // Initialize SDK
+    await sdk.initSDK();
+    console.log('✅ FHE SDK initialized');
+
+    // Create FHE instance with Sepolia config
+    fhevmInstance = await sdk.createInstance({
+      ...sdk.SepoliaConfig,
+      network: ethereumProvider,
+    });
+
+    console.log('✅ FHE instance created for Sepolia');
+
+    return fhevmInstance;
+  } catch (error) {
+    console.error('❌ Failed to initialize FHE:', error);
+    throw error;
+  }
 };
 
 /**
@@ -94,10 +141,27 @@ export const encryptUint64 = async (
 
   // Create encrypted input
   const input = instance.createEncryptedInput(contractAddr, userAddr);
-  input.add64(Number(value)); // Convert bigint to number for add64
+
+  // Use add32 for better compatibility (convert bigint to number)
+  const numValue = Number(value);
+  if (numValue > 4294967295) {
+    throw new Error('Value too large for uint32. Maximum is 4,294,967,295');
+  }
+  input.add32(numValue);
 
   // Encrypt and get handles
   const { handles, inputProof } = await input.encrypt();
+
+  console.log('🔐 Encrypted uint64:', {
+    value: value.toString(),
+    handle: handles?.[0] ? hexlify(handles[0]).slice(0, 20) + '...' : 'N/A',
+    proof: inputProof ? hexlify(inputProof).slice(0, 20) + '...' : 'N/A',
+  });
+
+  if (!handles?.length || !inputProof) {
+    console.error('FHE encryption failed:', { handles, inputProof });
+    throw new Error('FHE encryption failed: empty handles or proof');
+  }
 
   return {
     handle: hexlify(handles[0]),

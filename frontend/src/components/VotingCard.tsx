@@ -34,7 +34,7 @@ const VotingCard = ({
     Tallied: "default",
   };
 
-  const quorumProgress = (totalVoters / quorum) * 100;
+  const quorumProgress = quorum > 0 ? Math.min(100, (totalVoters / quorum) * 100) : 0;
 
   const getVoteTypeIcon = () => {
     switch (voteType) {

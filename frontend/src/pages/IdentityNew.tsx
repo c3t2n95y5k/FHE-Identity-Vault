@@ -10,30 +10,7 @@ import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import { toast } from "sonner";
-
-// Common countries
-const COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "CN", name: "China" },
-  { code: "JP", name: "Japan" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "CA", name: "Canada" },
-  { code: "AU", name: "Australia" },
-  { code: "SG", name: "Singapore" },
-  { code: "HK", name: "Hong Kong" },
-  { code: "KR", name: "South Korea" },
-  { code: "IN", name: "India" },
-  { code: "BR", name: "Brazil" },
-  { code: "MX", name: "Mexico" },
-  { code: "IT", name: "Italy" },
-  { code: "ES", name: "Spain" },
-  { code: "NL", name: "Netherlands" },
-  { code: "CH", name: "Switzerland" },
-  { code: "SE", name: "Sweden" },
-  { code: "NO", name: "Norway" },
-];
+import { COUNTRIES } from "@/lib/countries";
 
 const IdentityNew = () => {
   const { address, isConnected } = useAccount();
@@ -43,7 +20,10 @@ const IdentityNew = () => {
   const [formData, setFormData] = useState({
     netWorth: "",
     domicile: "",
+    tier: "1",
     isPEP: false,
+    watchlist: "0",
+    riskScore: "50",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +42,10 @@ const IdentityNew = () => {
       const hash = await createIdentity({
         netWorth: parseInt(formData.netWorth),
         domicile: formData.domicile,
+        tier: parseInt(formData.tier),
         isPEP: formData.isPEP,
+        watchlist: parseInt(formData.watchlist),
+        riskScore: parseInt(formData.riskScore),
       });
 
       toast.success("Identity created successfully!");
@@ -196,6 +179,25 @@ const IdentityNew = () => {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="tier">Tier (1-10)</Label>
+                <Select
+                  value={formData.tier}
+                  onValueChange={(value) => setFormData({ ...formData, tier: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((t) => (
+                      <SelectItem key={t} value={t.toString()}>
+                        Tier {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -207,6 +209,42 @@ const IdentityNew = () => {
                 <Label htmlFor="isPEP" className="cursor-pointer">
                   I am a Politically Exposed Person (PEP)
                 </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="watchlist">Watchlist Status (0-5)</Label>
+                <Select
+                  value={formData.watchlist}
+                  onValueChange={(value) => setFormData({ ...formData, watchlist: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Not on Watchlist</SelectItem>
+                    <SelectItem value="1">Level 1</SelectItem>
+                    <SelectItem value="2">Level 2</SelectItem>
+                    <SelectItem value="3">Level 3</SelectItem>
+                    <SelectItem value="4">Level 4</SelectItem>
+                    <SelectItem value="5">Level 5</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="riskScore">Risk Score (0-100)</Label>
+                <Input
+                  id="riskScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.riskScore}
+                  onChange={(e) => setFormData({ ...formData, riskScore: e.target.value })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Lower score = lower risk (default: 50)
+                </p>
               </div>
 
               <Button

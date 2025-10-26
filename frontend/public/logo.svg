@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="veilcivic_bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#8A5CF6"/>
+      <stop offset="55%" stop-color="#5C7CF8"/>
+      <stop offset="100%" stop-color="#1F3DFF"/>
+    </radialGradient>
+    <linearGradient id="veilcivic_v" x1="20%" y1="10%" x2="80%" y2="90%">
+      <stop offset="0%" stop-color="#F6C1FF"/>
+      <stop offset="50%" stop-color="#91E7FF"/>
+      <stop offset="100%" stop-color="#3CFFDC"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#veilcivic_bg)"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="32">
+    <path d="M144 148c44 84 92 172 112 208 20-36 70-126 112-208" stroke="url(#veilcivic_v)"/>
+    <path d="M352 320c-18 32-52 68-96 68-80 0-120-74-120-132 0-59 41-132 120-132 44 0 78 28 96 64" stroke="#FDFDFE" opacity=".72"/>
+  </g>
+</svg>

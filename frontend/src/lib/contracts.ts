@@ -5,16 +5,15 @@ export const CONTRACTS = {
   QUADRATIC_VOTING: (import.meta.env.VITE_QUADRATIC_VOTING_ADDRESS || '') as `0x${string}`,
 } as const;
 
-// Import contract ABIs
+// Import contract ABIs (already in array format)
 import IdentityVaultABI from '../contracts/FHEIdentityVault.json';
 import BallotABI from '../contracts/FHEBallot.json';
 import QuadraticVotingABI from '../contracts/FHEQuadraticVoting.json';
 
-export const ABIS = {
-  IDENTITY_VAULT: IdentityVaultABI,
-  BALLOT: BallotABI,
-  QUADRATIC_VOTING: QuadraticVotingABI,
-} as const;
+// Export ABIs directly (they're already ABI arrays from JSON)
+export const IDENTITY_VAULT_ABI = IdentityVaultABI;
+export const BALLOT_ABI = BallotABI;
+export const QUADRATIC_VOTING_ABI = QuadraticVotingABI;
 
 // Chain configuration
 export const CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID) || 11155111;

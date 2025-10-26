@@ -1,16 +1,21 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { CONTRACTS, ABIS } from '@/lib/contracts';
-import { encryptData, initFHE } from '@/lib/fhe';
+import { useReadContract, useWriteContract } from 'wagmi';
+import { CONTRACTS, IDENTITY_VAULT_ABI } from '@/lib/contracts';
+import { encryptData } from '@/lib/fhe';
 import { useAccount } from 'wagmi';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { countryCodeToNumeric } from '@/lib/countries';
 
 export function useIdentity() {
   const { address } = useAccount();
 
   // Read: Check if user has identity
-  const { data: hasIdentity, refetch: refetchHasIdentity } = useReadContract({
+  const {
+    data: hasIdentityData,
+    refetch: refetchHasIdentity,
+    status: hasIdentityStatus,
+  } = useReadContract({
     address: CONTRACTS.IDENTITY_VAULT,
-    abi: ABIS.IDENTITY_VAULT.abi,
+    abi: IDENTITY_VAULT_ABI,
     functionName: 'hasIdentity',
     args: address ? [address] : undefined,
     query: {
@@ -18,20 +23,57 @@ export function useIdentity() {
     },
   });
 
-  // Read: Get identity (only public fields will be visible)
-  const { data: identityData } = useReadContract({
+  // Read: Get identity plaintext data (domicile, tier, etc.)
+  const {
+    data: identityPlaintext,
+    status: identityStatus,
+  } = useReadContract({
     address: CONTRACTS.IDENTITY_VAULT,
-    abi: ABIS.IDENTITY_VAULT.abi,
-    functionName: 'getIdentity',
+    abi: IDENTITY_VAULT_ABI,
+    functionName: 'getPlaintextData',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && !!hasIdentity,
+      enabled: !!address && Boolean(hasIdentityData),
     },
   });
 
+  const identity = useMemo(() => {
+    if (!identityPlaintext) return null;
+
+    const [
+      domicile,
+      tier,
+      pep,
+      watchlist,
+      riskScore,
+      createdAt,
+      updatedAt,
+    ] = identityPlaintext as readonly [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint
+    ];
+
+    return {
+      domicileCode: Number(domicile),
+      tier: Number(tier),
+      pep: Number(pep) === 1,
+      watchlist: Number(watchlist),
+      riskScore: Number(riskScore),
+      createdAt: Number(createdAt),
+      updatedAt: Number(updatedAt),
+    };
+  }, [identityPlaintext]);
+
   return {
-    hasIdentity: !!hasIdentity,
-    identityData,
+    hasIdentity: Boolean(hasIdentityData),
+    identity,
+    identityData: identity,
+    isLoading: hasIdentityStatus === 'pending' || identityStatus === 'pending',
     refetchHasIdentity,
   };
 }
@@ -44,17 +86,17 @@ export function useCreateIdentity() {
   const createIdentity = async (params: {
     netWorth: number;
     domicile: string;
+    tier: number;
     isPEP: boolean;
+    watchlist: number;
+    riskScore: number;
   }) => {
     if (!address) throw new Error('Wallet not connected');
 
     try {
       setIsEncrypting(true);
 
-      // Initialize FHE
-      await initFHE();
-
-      // Encrypt net worth
+      // Encrypt net worth (initFHE will be called inside encryptData)
       const { encryptedAmount: encryptedNetWorth, proof: netWorthProof } = await encryptData(
         BigInt(params.netWorth),
         CONTRACTS.IDENTITY_VAULT,
@@ -64,15 +106,22 @@ export function useCreateIdentity() {
       setIsEncrypting(false);
 
       // Create identity on-chain
+      // Contract expects: (encryptedNetWorth, proof, domicile, tier, pep, watchlist, riskScore)
+      const domicileCode = countryCodeToNumeric(params.domicile);
+      const pep = params.isPEP ? 1 : 0;
+
       const hash = await writeContractAsync({
         address: CONTRACTS.IDENTITY_VAULT,
-        abi: ABIS.IDENTITY_VAULT.abi,
+        abi: IDENTITY_VAULT_ABI,
         functionName: 'createIdentity',
         args: [
           encryptedNetWorth,
           netWorthProof,
-          params.domicile,
-          params.isPEP,
+          domicileCode,
+          params.tier,
+          pep,
+          params.watchlist,
+          params.riskScore,
         ],
       });
 
@@ -104,10 +153,7 @@ export function useUpdateIdentity() {
     try {
       setIsEncrypting(true);
 
-      // Initialize FHE
-      await initFHE();
-
-      // Encrypt net worth
+      // Encrypt net worth (initFHE will be called inside encryptData)
       const { encryptedAmount: encryptedNetWorth, proof: netWorthProof } = await encryptData(
         BigInt(params.netWorth),
         CONTRACTS.IDENTITY_VAULT,
@@ -119,12 +165,12 @@ export function useUpdateIdentity() {
       // Update identity on-chain
       const hash = await writeContractAsync({
         address: CONTRACTS.IDENTITY_VAULT,
-        abi: ABIS.IDENTITY_VAULT.abi,
+        abi: IDENTITY_VAULT_ABI,
         functionName: 'updateIdentity',
         args: [
           encryptedNetWorth,
           netWorthProof,
-          params.domicile,
+          countryCodeToNumeric(params.domicile),
           params.isPEP,
         ],
       });

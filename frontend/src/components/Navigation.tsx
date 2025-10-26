@@ -1,16 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, Vote, User, Menu } from "lucide-react";
+import { Sparkles, Vote, IdCard, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import BrandLogo from "@/components/BrandLogo";
 
 const Navigation = () => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "Dashboard", icon: Shield },
+    { path: "/", label: "Dashboard", icon: Sparkles },
     { path: "/voting", label: "Voting", icon: Vote },
-    { path: "/identity", label: "Identity", icon: User },
+    { path: "/identity", label: "Identity", icon: IdCard },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -21,10 +22,8 @@ const Navigation = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="hidden sm:inline">FHE Identity</span>
+            <BrandLogo size={32} />
+            <span className="hidden sm:inline">VeilCivic</span>
           </Link>
 
           {/* Desktop Navigation */}
