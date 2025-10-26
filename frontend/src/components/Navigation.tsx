@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Vote, IdCard, Menu } from "lucide-react";
+import { Sparkles, Vote, IdCard, Menu, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -7,9 +7,10 @@ import BrandLogo from "@/components/BrandLogo";
 
 const Navigation = () => {
   const location = useLocation();
-  
+
   const navItems = [
     { path: "/", label: "Dashboard", icon: Sparkles },
+    { path: "/about", label: "About", icon: Info },
     { path: "/voting", label: "Voting", icon: Vote },
     { path: "/identity", label: "Identity", icon: IdCard },
   ];

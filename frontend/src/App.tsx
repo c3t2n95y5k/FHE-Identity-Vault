@@ -8,6 +8,7 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { config } from '@/lib/wagmi';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import About from "./pages/About";
 import Voting from "./pages/Voting";
 import VotingDetail from "./pages/VotingDetail";
 import Identity from "./pages/IdentityNew";
@@ -25,6 +26,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
               <Route path="/voting" element={<Voting />} />
               <Route path="/voting/:votingId" element={<VotingDetail />} />
               <Route path="/identity" element={<Identity />} />
