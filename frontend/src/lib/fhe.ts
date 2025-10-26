@@ -33,9 +33,8 @@ const loadSdk = async (): Promise<any> => {
   if (!sdkPromise) {
     sdkPromise = new Promise((resolve, reject) => {
       const existing = document.querySelector(`script[src="${SDK_URL}"]`) as HTMLScriptElement | null;
-      if (existing) {
-        existing.addEventListener('load', () => resolve(window.relayerSDK));
-        existing.addEventListener('error', () => reject(new Error('Failed to load FHE SDK')));
+      if (existing && window.relayerSDK) {
+        resolve(window.relayerSDK);
         return;
       }
 
@@ -43,14 +42,17 @@ const loadSdk = async (): Promise<any> => {
       script.src = SDK_URL;
       script.async = true;
       script.onload = () => {
-        if (window.relayerSDK) {
-          resolve(window.relayerSDK);
-        } else {
-          reject(new Error('relayerSDK unavailable after load'));
-        }
+        // Wait a bit for the SDK to initialize
+        setTimeout(() => {
+          if (window.relayerSDK) {
+            resolve(window.relayerSDK);
+          } else {
+            reject(new Error('relayerSDK unavailable after load'));
+          }
+        }, 100);
       };
       script.onerror = () => reject(new Error('Failed to load FHE SDK'));
-      document.body.appendChild(script);
+      document.head.appendChild(script);
     });
   }
 
