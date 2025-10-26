@@ -2,61 +2,22 @@ import { hexlify, getAddress } from 'ethers';
 
 declare global {
   interface Window {
-    relayerSDK?: {
-      initSDK: () => Promise<void>;
-      createInstance: (config: Record<string, unknown>) => Promise<any>;
-      SepoliaConfig: Record<string, unknown>;
-    };
     ethereum?: any;
     okxwallet?: any;
+    fhevm?: any;
   }
 }
 
 // FHE instance singleton
 let fhevmInstance: any = null;
-let sdkPromise: Promise<any> | null = null;
+let initPromise: Promise<any> | null = null;
 
-const SDK_URL = 'https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js';
-
-/**
- * Dynamically load Zama FHE SDK from CDN
- */
-const loadSdk = async (): Promise<any> => {
-  if (typeof window === 'undefined') {
-    throw new Error('FHE SDK requires browser environment');
-  }
-
-  if (window.relayerSDK) {
-    return window.relayerSDK;
-  }
-
-  if (!sdkPromise) {
-    sdkPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[src="${SDK_URL}"]`) as HTMLScriptElement | null;
-      if (existing && window.relayerSDK) {
-        resolve(window.relayerSDK);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = SDK_URL;
-      script.async = true;
-      script.onload = () => {
-        // Wait a bit for the SDK to initialize
-        setTimeout(() => {
-          if (window.relayerSDK) {
-            resolve(window.relayerSDK);
-          } else {
-            reject(new Error('relayerSDK unavailable after load'));
-          }
-        }, 100);
-      };
-      script.onerror = () => reject(new Error('Failed to load FHE SDK'));
-      document.head.appendChild(script);
-    });
-  }
-
-  return sdkPromise;
+// Sepolia network configuration
+const SEPOLIA_CONFIG = {
+  chainId: 11155111,
+  networkUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
+  gatewayUrl: 'https://gateway.sepolia.zama.ai',
+  aclAddress: '0xFee8407e2f5e3Ee68ad77cAE98c434e637f516e5',
 };
 
 /**
@@ -66,39 +27,44 @@ export const initFHE = async (): Promise<any> => {
   // Return existing instance if already initialized
   if (fhevmInstance) return fhevmInstance;
 
-  try {
-    console.log('🔧 Loading FHE SDK...');
+  // Return pending initialization if in progress
+  if (initPromise) return initPromise;
 
-    // Load SDK from CDN
-    const sdk = await loadSdk();
-    if (!sdk) {
-      throw new Error('FHE SDK not available');
+  initPromise = (async () => {
+    try {
+      console.log('🔧 Initializing FHE SDK...');
+
+      // Get Ethereum provider
+      const ethereumProvider = window.okxwallet || window.ethereum;
+      if (!ethereumProvider) {
+        throw new Error('Ethereum provider not found. Please connect your wallet first.');
+      }
+
+      // Dynamic import from CDN
+      const { createInstance } = await import(
+        'https://cdn.jsdelivr.net/npm/fhevmjs@0.5.3/+esm'
+      );
+
+      // Create FHE instance with Sepolia config
+      fhevmInstance = await createInstance({
+        chainId: SEPOLIA_CONFIG.chainId,
+        networkUrl: SEPOLIA_CONFIG.networkUrl,
+        gatewayUrl: SEPOLIA_CONFIG.gatewayUrl,
+        aclAddress: SEPOLIA_CONFIG.aclAddress,
+        network: ethereumProvider,
+      });
+
+      console.log('✅ FHE instance created for Sepolia');
+
+      return fhevmInstance;
+    } catch (error) {
+      console.error('❌ Failed to initialize FHE:', error);
+      initPromise = null; // Reset so it can retry
+      throw error;
     }
+  })();
 
-    // Initialize WASM module
-    await sdk.initSDK();
-    console.log('✅ WASM initialized');
-
-    // Get Ethereum provider
-    const ethereumProvider = window.okxwallet || window.ethereum;
-    if (!ethereumProvider) {
-      throw new Error('Ethereum provider not found. Please connect your wallet first.');
-    }
-
-    // Create FHE instance with Sepolia config
-    const config = {
-      ...sdk.SepoliaConfig,
-      network: ethereumProvider,
-    };
-
-    fhevmInstance = await sdk.createInstance(config);
-    console.log('✅ FHE instance created for Sepolia');
-
-    return fhevmInstance;
-  } catch (error) {
-    console.error('❌ Failed to initialize FHE:', error);
-    throw error;
-  }
+  return initPromise;
 };
 
 /**
