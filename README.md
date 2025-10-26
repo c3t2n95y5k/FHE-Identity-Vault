@@ -105,97 +105,86 @@ function castVote(uint256 votingId, inEuint32 calldata encryptedChoice) public {
 
 ### System Overview
 
-\`\`\`
-┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   React Client  │ ◄────── │  Zama FHE SDK    │ ◄────── │  User Wallet    │
-│   (Frontend)    │         │  (fhevmjs)       │         │  (MetaMask)     │
-└────────┬────────┘         └──────────────────┘         └─────────────────┘
-         │
-         │ Encrypted Data
-         ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Ethereum Sepolia Testnet                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐ │
-│  │ IdentityVault   │  │   FHEBallot     │  │  QuadraticVoting       │ │
-│  │  Contract       │  │   Contract      │  │   Contract             │ │
-│  │                 │  │                 │  │                        │ │
-│  │ • Create ID     │  │ • Create Poll   │  │ • QV Vote Logic        │ │
-│  │ • Update Data   │  │ • Cast Vote     │  │ • Credit Allocation    │ │
-│  │ • Check Access  │  │ • Tally Results │  │ • Encrypted Tallying   │ │
-│  └─────────────────┘  └─────────────────┘  └────────────────────────┘ │
-│                                 │                                        │
-│                                 ▼                                        │
-│                    ┌────────────────────────┐                           │
-│                    │   FHE Coprocessor      │                           │
-│                    │  (Zama Gateway)        │                           │
-│                    │                        │                           │
-│                    │  • Decrypt Results     │                           │
-│                    │  • Compute on Encrypted│                           │
-│                    └────────────────────────┘                           │
-└─────────────────────────────────────────────────────────────────────────┘
-\`\`\`
+```mermaid
+graph TD
+    User[👤 User Wallet<br/>MetaMask] --> SDK[🔐 Zama FHE SDK<br/>fhevmjs]
+    SDK --> Frontend[⚛️ React Client<br/>Frontend DApp]
+    Frontend -->|Encrypted Data| Blockchain[📦 Ethereum Sepolia Testnet]
+
+    subgraph Blockchain
+        IDVault[🔒 IdentityVault Contract<br/>• Create Identity<br/>• Update Data<br/>• Check Access]
+        Ballot[🗳️ FHEBallot Contract<br/>• Create Polls<br/>• Cast Votes<br/>• Tally Results]
+        QV[📊 QuadraticVoting Contract<br/>• QV Logic<br/>• Credit Allocation<br/>• Encrypted Tallying]
+    end
+
+    Blockchain --> Gateway[🚪 FHE Coprocessor<br/>Zama Gateway<br/>• Decrypt Results<br/>• Compute on Encrypted]
+```
+
+**架构说明：**
+- **前端层**：React + TypeScript 应用，使用 Zama FHE SDK 进行客户端加密
+- **区块链层**：三个核心智能合约部署在 Sepolia 测试网
+  - `IdentityVault`：加密身份管理
+  - `FHEBallot`：隐私投票系统
+  - `QuadraticVoting`：二次方投票实现
+- **FHE 网关**：Zama Gateway 负责最终结果解密和加密计算
 
 ### Contract Architecture
 
-\`\`\`
-┌────────────────────────────────────────────────────────────────┐
-│                      Smart Contract Layer                       │
-├────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │                    FHEVotingBase.sol                      │ │
-│  │  (Abstract Base Contract)                                 │ │
-│  │                                                            │ │
-│  │  • FHE library integration                                │ │
-│  │  • Common voting validation logic                         │ │
-│  │  • Time window management                                 │ │
-│  │  • Access control modifiers                               │ │
-│  └──────────────────┬──────────────────┬────────────────────┘ │
-│                     │                  │                       │
-│         ┌───────────┴──────┐  ┌───────┴──────────┐           │
-│         │                  │  │                   │           │
-│  ┌──────▼─────────┐ ┌─────▼──────────┐ ┌────────▼─────────┐ │
-│  │  FHEBallot.sol │ │ IFHEVoting.sol │ │ IdentityVault.sol│ │
-│  │                │ │                 │ │                  │ │
-│  │ • Single Vote  │ │ • Interface    │ │ • KYC Data       │ │
-│  │ • Multi Vote   │ │ • Events       │ │ • Net Worth      │ │
-│  │ • Weighted     │ │ • Structs      │ │ • Access Levels  │ │
-│  └────────────────┘ └─────────────────┘ └──────────────────┘ │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │            QuadraticVoting.sol (Extended)                 │ │
-│  │                                                            │ │
-│  │  • Quadratic voting formula: cost = votes²                │ │
-│  │  • Voice credit management                                │ │
-│  │  • FHE-encrypted credit tracking                          │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                                 │
-└────────────────────────────────────────────────────────────────┘
-\`\`\`
+```mermaid
+graph TD
+    Base[📜 FHEVotingBase.sol<br/>抽象基础合约<br/>• FHE 库集成<br/>• 投票验证逻辑<br/>• 时间窗口管理<br/>• 访问控制]
 
-### Data Flow: Casting an Encrypted Vote
+    Base --> Ballot[🗳️ FHEBallot.sol<br/>• 单选投票<br/>• 多选投票<br/>• 加权投票]
+    Base --> Interface[📋 IFHEVoting.sol<br/>• 接口定义<br/>• 事件<br/>• 结构体]
+    Base --> Identity[🔐 IdentityVault.sol<br/>• KYC 数据<br/>• 净资产<br/>• 访问级别]
 
-\`\`\`
-1. User selects vote choice in UI
-                ↓
-2. fhevmjs encrypts choice locally (euint32)
-                ↓
-3. Generate cryptographic proof
-                ↓
-4. Submit encrypted vote + proof to FHEBallot
-                ↓
-5. Smart contract validates proof on-chain
-                ↓
-6. Add encrypted vote to encrypted tally (FHE.add)
-                ↓
-7. Vote stored permanently encrypted on-chain
-                ↓
-8. When voting ends, request Gateway decryption
-                ↓
-9. Zama Gateway decrypts final tally
-                ↓
-10. Results published on-chain
-\`\`\`
+    Base --> QV[📊 QuadraticVoting.sol<br/>• 二次方投票公式: cost = votes²<br/>• 语音信用管理<br/>• FHE 加密信用追踪]
+
+    style Base fill:#e1f5ff
+    style Ballot fill:#fff3e0
+    style QV fill:#f3e5f5
+    style Identity fill:#e8f5e9
+```
+
+**合约继承关系：**
+- `FHEVotingBase.sol`：所有投票合约的抽象基类，封装 FHE 通用逻辑
+- `FHEBallot.sol`：继承基类，实现传统投票类型
+- `QuadraticVoting.sol`：继承基类，实现二次方投票
+- `IdentityVault.sol`：独立合约，管理加密身份数据
+- `IFHEVoting.sol`：接口合约，定义标准
+
+### Data Flow: 加密投票流程
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 用户
+    participant F as ⚛️ 前端 DApp
+    participant SDK as 🔐 fhevmjs SDK
+    participant BC as 📦 FHEBallot 合约
+    participant GW as 🚪 Zama Gateway
+
+    U->>F: 1. 选择投票选项
+    F->>SDK: 2. 请求加密投票数据
+    SDK->>SDK: 3. 本地加密 (euint32)
+    SDK->>SDK: 4. 生成加密证明
+    SDK->>F: 5. 返回加密数据 + 证明
+    F->>BC: 6. 提交加密投票到链上
+    BC->>BC: 7. 验证加密证明
+    BC->>BC: 8. FHE.add() 累加加密投票
+    BC->>BC: 9. 存储加密结果
+    Note over BC: 投票期结束
+    BC->>GW: 10. 请求解密最终结果
+    GW->>GW: 11. 解密加密计票
+    GW->>BC: 12. 返回明文结果
+    BC->>F: 13. 发布投票结果
+    F->>U: 14. 显示最终结果
+```
+
+**关键步骤说明：**
+1. **客户端加密**：所有敏感数据在浏览器端加密后才提交
+2. **零知识证明**：生成证明以验证加密数据的正确性
+3. **链上计算**：使用 FHE 直接在加密数据上进行加法运算
+4. **网关解密**：仅在投票结束后通过 Zama Gateway 解密最终结果
 
 ---
 
@@ -246,18 +235,19 @@ function castVote(uint256 votingId, inEuint32 calldata encryptedChoice) public {
 
 ### Installation
 
+项目使用 **npm workspaces** 统一管理前端和合约依赖：
+
 \`\`\`bash
 # Clone the repository
 git clone https://github.com/c3t2n95y5k/FHE-Identity-Vault.git
 cd FHE-Identity-Vault
 
-# Install frontend dependencies
-cd frontend
+# 方式 1：使用根目录 package.json 统一安装（推荐）
 npm install
 
-# Install contract dependencies
-cd ../contracts
-npm install
+# 方式 2：分别安装各子项目依赖
+cd frontend && npm install && cd ..
+cd contracts && npm install && cd ..
 \`\`\`
 
 ### Configuration
@@ -288,29 +278,47 @@ SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 
 ### Development
 
+使用根目录统一命令（推荐）：
+
 \`\`\`bash
-# Start frontend development server
+# 启动前端开发服务器
+npm run dev
+# 访问 http://localhost:8080
+
+# 编译智能合约
+npm run compile:contracts
+
+# 部署合约到 Sepolia
+npm run deploy:contracts
+
+# 运行合约测试
+npm run test
+\`\`\`
+
+或者进入子目录单独运行：
+
+\`\`\`bash
+# 前端开发
 cd frontend
 npm run dev
-# Visit http://localhost:8080
 
-# Compile smart contracts
+# 合约开发
 cd contracts
 npx hardhat compile
-
-# Deploy contracts to Sepolia
 npx hardhat run scripts/deploy-all.js --network sepolia
-
-# Create test voting data
 npx hardhat run scripts/create-10-votings.js --network sepolia
 \`\`\`
 
 ### Build for Production
 
 \`\`\`bash
+# 从根目录构建
+npm run build
+
+# 或进入frontend目录构建
 cd frontend
 npm run build
-npm run preview  # Preview production build locally
+npm run preview  # 预览生产构建
 \`\`\`
 
 ---

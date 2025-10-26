@@ -1,0 +1,42 @@
+{
+  "name": "fhe-identity-vault",
+  "version": "1.0.0",
+  "description": "Privacy-First Identity & Governance Platform powered by Zama FHE",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "npm run dev:frontend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:contracts": "npm run compile --workspace=contracts",
+    "build": "npm run build --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "compile:contracts": "npm run compile --workspace=contracts",
+    "deploy:contracts": "npm run deploy --workspace=contracts",
+    "test": "npm run test --workspace=contracts",
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=contracts",
+    "clean": "rm -rf node_modules frontend/node_modules contracts/node_modules frontend/dist contracts/artifacts contracts/cache"
+  },
+  "keywords": [
+    "fhe",
+    "zama",
+    "privacy",
+    "voting",
+    "identity",
+    "blockchain",
+    "ethereum",
+    "homomorphic-encryption"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/c3t2n95y5k/FHE-Identity-Vault.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
