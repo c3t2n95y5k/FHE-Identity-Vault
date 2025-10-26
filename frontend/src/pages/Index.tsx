@@ -283,12 +283,11 @@ const Index = () => {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Privacy-First Identity & Voting
+            VeilCivic: Privacy-First Identity & Voting
           </h1>
 
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Manage your encrypted identity and participate in privacy-preserving governance with 
-            Fully Homomorphic Encryption on the blockchain.
+            VeilCivic lets you manage encrypted identity credentials and participate in governance secured by Fully Homomorphic Encryption — all without sacrificing privacy.
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center mb-12">
