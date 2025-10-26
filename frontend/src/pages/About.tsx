@@ -75,15 +75,19 @@ const About = () => {
             <Play className="h-6 w-6 text-primary" />
             Demo Video
           </h2>
-          <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Play className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Demo video coming soon</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                See how to create encrypted identities and participate in private voting with VeilCivic
-              </p>
-            </div>
+          <div className="aspect-video bg-black rounded-lg overflow-hidden">
+            <video
+              className="w-full h-full"
+              controls
+              poster="/logo.svg"
+            >
+              <source src="/test.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
+          <p className="text-sm text-muted-foreground mt-3 text-center">
+            See how to create encrypted identities and participate in private voting with VeilCivic
+          </p>
         </Card>
 
         {/* Problems We Solve */}

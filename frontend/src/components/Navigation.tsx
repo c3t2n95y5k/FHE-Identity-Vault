@@ -10,9 +10,9 @@ const Navigation = () => {
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: Sparkles },
-    { path: "/about", label: "About", icon: Info },
     { path: "/voting", label: "Voting", icon: Vote },
     { path: "/identity", label: "Identity", icon: IdCard },
+    { path: "/about", label: "About", icon: Info },
   ];
 
   const isActive = (path: string) => location.pathname === path;
