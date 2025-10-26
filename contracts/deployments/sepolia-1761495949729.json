@@ -1,0 +1,14 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x72961F8edD2e2fF9838fA319630464DA443E37a0",
+  "timestamp": "2025-10-26T16:25:49.729Z",
+  "contracts": {
+    "FHEIdentityVault": "0x6F9d93A540Ad88eEF3EACB1FaF11aEcE2700F3C2",
+    "FHEBallot": "0xdb87F76ceA345f6fC0eCA788470Ccd5633071b3D",
+    "FHEQuadraticVoting": "0x7c71bed2b28bB691fd1c94985436cEFc3997b609"
+  },
+  "gasUsed": {
+    "note": "Gas usage varies based on network conditions"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployer": "0x1796aA25b19B8Bb70A502f129eC640EBBbf1841E",
+  "timestamp": "2025-10-12T06:33:01.993Z",
+  "contracts": {
+    "FHEBallot": "0xa7D3cdfDe2E3A6bB7c68bC4Ffe747f00828d14b2",
+    "FHEQuadraticVoting": "0x4E2a4FcE9Fc70f970665E1F99A01C63a3385F928"
+  },
+  "note": "This deployment uses mock FHE values for Sepolia. For full FHE functionality, deploy to Zama Devnet."
+}
