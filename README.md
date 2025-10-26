@@ -364,60 +364,60 @@ FHE-Identity-Vault/
 
 ## 🗺️ Roadmap
 
-### Phase 1: Foundation (Completed ✅)
-- [x] Smart contract architecture design
-- [x] FHE integration with Zama fhEVM
-- [x] Identity vault contract implementation
-- [x] Basic voting mechanisms (Single, Multi, Weighted)
-- [x] Frontend React application setup
-- [x] Wallet integration (MetaMask, WalletConnect)
+### 第一阶段：基础建设 (已完成 ✅)
+- [x] 智能合约架构设计
+- [x] Zama fhEVM FHE 技术集成
+- [x] 身份保险库合约实现
+- [x] 基础投票机制（单选、多选、加权投票）
+- [x] React 前端应用搭建
+- [x] 钱包集成（MetaMask、WalletConnect）
 
-### Phase 2: Core Features (Completed ✅)
-- [x] Encrypted identity creation & management
-- [x] Client-side FHE encryption (fhevmjs)
-- [x] Multiple voting types implementation
-- [x] Time-gated voting periods
-- [x] Whitelist management system
-- [x] Quadratic voting formula
-- [x] Result decryption via Gateway
-- [x] Responsive UI with Tailwind CSS
+### 第二阶段：核心功能 (已完成 ✅)
+- [x] 加密身份创建与管理
+- [x] 客户端 FHE 加密（fhevmjs）
+- [x] 多种投票类型实现
+- [x] 时间门控投票周期
+- [x] 白名单管理系统
+- [x] 二次方投票公式
+- [x] 通过 Gateway 解密结果
+- [x] Tailwind CSS 响应式 UI
 
-### Phase 3: Enhanced Governance (Current 🔄)
-- [x] Voting page with real contract data
-- [x] Vote casting with FHE encryption
-- [x] Voting detail page with live results
-- [ ] Admin dashboard for governance
-- [ ] Voting analytics and statistics
-- [ ] Vote delegation system
-- [ ] Proposal creation UI
-- [ ] Multi-signature voting results
+### 第三阶段：增强治理 (进行中 🔄)
+- [x] 从合约读取真实投票数据
+- [x] FHE 加密投票
+- [x] 投票详情页面与实时结果
+- [ ] 治理管理仪表板
+- [ ] 投票数据分析与统计
+- [ ] 投票委托系统
+- [ ] 提案创建 UI
+- [ ] 多签名投票结果验证
 
-### Phase 4: Advanced Features (Q1 2025 🔮)
-- [ ] **Identity Verification**: Integration with real KYC providers
-- [ ] **Cross-Chain Support**: Bridge to Polygon, Arbitrum
-- [ ] **DAO Templates**: Pre-built governance structures
-- [ ] **Mobile App**: React Native mobile client
-- [ ] **Gasless Transactions**: Meta-transactions for better UX
-- [ ] **IPFS Integration**: Decentralized proposal storage
-- [ ] **ENS Support**: Human-readable addresses
+### 第四阶段：高级功能 🔮
+- [ ] **身份验证**：集成真实 KYC 服务商
+- [ ] **跨链支持**：桥接至 Polygon、Arbitrum
+- [ ] **DAO 模板**：预构建的治理结构
+- [ ] **移动应用**：React Native 移动端
+- [ ] **无 Gas 交易**：元交易改善用户体验
+- [ ] **IPFS 集成**：去中心化提案存储
+- [ ] **ENS 支持**：人类可读地址
 
-### Phase 5: Enterprise & Scale (Q2 2025 🔮)
-- [ ] **API Platform**: REST API for third-party integrations
-- [ ] **White-Label Solution**: Customizable for enterprises
-- [ ] **Audit & Security**: Professional smart contract audit
-- [ ] **Mainnet Deployment**: Production launch on Ethereum
-- [ ] **Governance Token**: Native token for platform governance
-- [ ] **Staking Mechanism**: Stake tokens for voting power
-- [ ] **Treasury Management**: Multi-sig treasury for DAOs
+### 第五阶段：企业级与规模化 🔮
+- [ ] **API 平台**：第三方集成 REST API
+- [ ] **白标解决方案**：可定制企业版
+- [ ] **审计与安全**：专业智能合约审计
+- [ ] **主网部署**：以太坊主网生产发布
+- [ ] **治理代币**：平台原生治理代币
+- [ ] **质押机制**：质押代币获得投票权
+- [ ] **金库管理**：DAO 多签金库
 
-### Phase 6: Ecosystem Growth (Q3 2025 🔮)
-- [ ] **SDK Release**: Developer toolkit for integrations
-- [ ] **Plugin System**: Extensible voting mechanisms
-- [ ] **Marketplace**: Templates and governance modules
-- [ ] **Analytics Platform**: Advanced voting insights
-- [ ] **Education Hub**: Tutorials and documentation
-- [ ] **Grant Program**: Fund community projects
-- [ ] **Partnerships**: Integrate with major DAOs
+### 第六阶段：生态系统增长 🔮
+- [ ] **SDK 发布**：开发者集成工具包
+- [ ] **插件系统**：可扩展投票机制
+- [ ] **市场平台**：治理模板和模块
+- [ ] **分析平台**：高级投票洞察
+- [ ] **教育中心**：教程和文档
+- [ ] **资助计划**：资助社区项目
+- [ ] **生态合作**：与主流 DAO 集成
 
 ---
 
