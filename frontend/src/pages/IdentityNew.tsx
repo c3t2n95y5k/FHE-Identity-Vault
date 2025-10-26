@@ -3,12 +3,37 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, Plus, Loader2 } from "lucide-react";
 import { useIdentity, useCreateIdentity } from "@/hooks/useIdentity";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import { toast } from "sonner";
+
+// Common countries
+const COUNTRIES = [
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "CN", name: "China" },
+  { code: "JP", name: "Japan" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "CA", name: "Canada" },
+  { code: "AU", name: "Australia" },
+  { code: "SG", name: "Singapore" },
+  { code: "HK", name: "Hong Kong" },
+  { code: "KR", name: "South Korea" },
+  { code: "IN", name: "India" },
+  { code: "BR", name: "Brazil" },
+  { code: "MX", name: "Mexico" },
+  { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" },
+  { code: "NL", name: "Netherlands" },
+  { code: "CH", name: "Switzerland" },
+  { code: "SE", name: "Sweden" },
+  { code: "NO", name: "Norway" },
+];
 
 const IdentityNew = () => {
   const { address, isConnected } = useAccount();
@@ -152,16 +177,23 @@ const IdentityNew = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="domicile">Domicile (Country Code)</Label>
-                <Input
-                  id="domicile"
-                  type="text"
-                  placeholder="US"
-                  maxLength={2}
+                <Label htmlFor="domicile">Domicile (Country)</Label>
+                <Select
                   value={formData.domicile}
-                  onChange={(e) => setFormData({ ...formData, domicile: e.target.value.toUpperCase() })}
+                  onValueChange={(value) => setFormData({ ...formData, domicile: value })}
                   required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name} ({country.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center space-x-2">
