@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
-import "@fhevm/solidity/lib/FHE.sol";
-import { externalEuint32 } from "encrypted-types/EncryptedTypes.sol";
+import {FHE, euint32, externalEuint32} from "@fhevm/solidity/lib/FHE.sol";
 
 /**
  * @title IFHEVoting
  * @notice Interface for FHE-enabled voting contracts
  * @dev Defines the standard interface for privacy-preserving voting using Fully Homomorphic Encryption
+ * Updated for fhEVM 0.9.1
  */
 interface IFHEVoting {
     // Enums
