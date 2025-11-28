@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "./FHEVotingBase.sol";
 import "./IFHEVoting.sol";
-import "@fhevm/solidity/lib/FHE.sol";
-import { externalEuint32 } from "encrypted-types/EncryptedTypes.sol";
-// Use the FHE coprocessor config for Sepolia from @fhevm/solidity
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {FHE, euint32, externalEuint32, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /**
  * @title FHEBallot
  * @notice Main voting contract implementing privacy-preserving voting with FHE
  * @dev Supports multiple voting types with encrypted vote tallying
- * @dev Inherits SepoliaConfig to initialize FHE coprocessor addresses on Sepolia
+ * Updated for fhEVM 0.9.1 with ZamaEthereumConfig
  */
-contract FHEBallot is FHEVotingBase, IFHEVoting, SepoliaConfig {
+contract FHEBallot is FHEVotingBase, IFHEVoting, ZamaEthereumConfig {
     // State variables
     uint256 private votingIdCounter;
     
