@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@fhevm/solidity/lib/FHE.sol";
-import { externalEuint64 } from "encrypted-types/EncryptedTypes.sol";
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {FHE, euint8, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /**
  * @title FHEIdentityVault
@@ -15,8 +14,10 @@ import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  * 2. Single encrypted field (netWorth) to optimize gas costs
  * 3. No complex architecture - straightforward implementation
  * 4. Reliable on-chain storage and access control
+ *
+ * Updated for fhEVM 0.9.1 with ZamaEthereumConfig
  */
-contract FHEIdentityVault is SepoliaConfig {
+contract FHEIdentityVault is ZamaEthereumConfig {
     // ═══════════════════════════════════════════════════════════════
     // DATA STRUCTURES
     // ═══════════════════════════════════════════════════════════════
