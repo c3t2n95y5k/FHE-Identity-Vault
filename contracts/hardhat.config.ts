@@ -1,6 +1,6 @@
-// import "@fhevm/hardhat-plugin"; // Removed due to version incompatibility
+import "@fhevm/hardhat-plugin";
 import "@nomicfoundation/hardhat-ethers";
-import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-verify";
 import "@openzeppelin/hardhat-upgrades";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
@@ -12,7 +12,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.28",
+        version: "0.8.24",
         settings: {
           optimizer: {
             enabled: true,
@@ -44,7 +44,7 @@ const config: HardhatUserConfig = {
     // Sepolia with FHE support (via Zama's FHE plugin)
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
       gasPrice: "auto",
       gas: "auto"
