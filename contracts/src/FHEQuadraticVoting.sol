@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "./FHEBallot.sol";
 import "./IFHEVoting.sol";
-import "@fhevm/solidity/lib/FHE.sol";
-import { externalEuint32 } from "encrypted-types/EncryptedTypes.sol";
+import {FHE, euint32, externalEuint32} from "@fhevm/solidity/lib/FHE.sol";
 
 /**
  * @title FHEQuadraticVoting
  * @notice Implements quadratic voting with FHE for privacy-preserving democratic voting
  * @dev Extends FHEBallot with quadratic voting mechanisms where cost increases quadratically
+ *
+ * Updated for fhEVM 0.9.1 with direct FHE type imports
  */
 contract FHEQuadraticVoting is FHEBallot, IFHEQuadraticVoting {
     
