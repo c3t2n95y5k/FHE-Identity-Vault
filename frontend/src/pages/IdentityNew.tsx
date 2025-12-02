@@ -8,14 +8,21 @@ import { Shield, Plus, Loader2 } from "lucide-react";
 import { useIdentity, useCreateIdentity } from "@/hooks/useIdentity";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { COUNTRIES } from "@/lib/countries";
 
 const IdentityNew = () => {
   const { address, isConnected } = useAccount();
   const { hasIdentity, identityData, refetchHasIdentity } = useIdentity();
-  const { createIdentity, isEncrypting } = useCreateIdentity();
+  const {
+    createIdentity,
+    isEncrypting,
+    isPending,
+    isConfirming,
+    isSuccess,
+    reset,
+  } = useCreateIdentity();
 
   const [formData, setFormData] = useState({
     netWorth: "",
@@ -26,7 +33,13 @@ const IdentityNew = () => {
     riskScore: "50",
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Refetch identity status when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess) {
+      refetchHasIdentity();
+      reset();
+    }
+  }, [isSuccess, refetchHasIdentity, reset]);
 
   const handleCreateIdentity = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,9 +50,7 @@ const IdentityNew = () => {
     }
 
     try {
-      setIsSubmitting(true);
-
-      const hash = await createIdentity({
+      await createIdentity({
         netWorth: parseInt(formData.netWorth),
         domicile: formData.domicile,
         tier: parseInt(formData.tier),
@@ -47,22 +58,14 @@ const IdentityNew = () => {
         watchlist: parseInt(formData.watchlist),
         riskScore: parseInt(formData.riskScore),
       });
-
-      toast.success("Identity created successfully!");
-      console.log("Transaction hash:", hash);
-
-      // Refetch identity status
-      setTimeout(() => {
-        refetchHasIdentity();
-      }, 2000);
-
+      // Toast notifications are handled by the hook
     } catch (error: any) {
+      // Error toasts are handled by the hook
       console.error("Failed to create identity:", error);
-      toast.error(error.message || "Failed to create identity");
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
+  const isSubmitting = isEncrypting || isPending || isConfirming;
 
   if (!isConnected) {
     return (
@@ -251,17 +254,22 @@ const IdentityNew = () => {
                 type="submit"
                 className="w-full bg-gradient-primary shadow-primary"
                 size="lg"
-                disabled={isEncrypting || isSubmitting}
+                disabled={isSubmitting}
               >
                 {isEncrypting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Encrypting Data...
                   </>
-                ) : isSubmitting ? (
+                ) : isPending ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating Identity...
+                    Confirm in Wallet...
+                  </>
+                ) : isConfirming ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Confirming Transaction...
                   </>
                 ) : (
                   <>
