@@ -1,7 +1,14 @@
-import { useReadContract, useWriteContract, usePublicClient, useAccount } from 'wagmi';
+import { useReadContract, useWriteContract, usePublicClient, useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACTS, BALLOT_ABI } from '@/lib/contracts';
 import { encryptUint32 } from '@/lib/fhe';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  toastTxPending,
+  toastTxSuccess,
+  toastTxError,
+  toastUserRejected,
+  isUserRejectedError,
+} from '@/lib/toast-utils';
 
 // Voting types matching contract enum
 export enum VoteType {
@@ -20,13 +27,20 @@ export enum VotingStatus {
 
 // Hook to get voting count
 export function useVotingCount() {
-  const { data: count } = useReadContract({
+  const { data: count, isLoading, isFetching } = useReadContract({
     address: CONTRACTS.BALLOT,
     abi: BALLOT_ABI,
     functionName: 'votingCounter',
   });
 
-  return { count: count ? Number(count) : 0 };
+  // Handle BigInt correctly - 0n is falsy but is a valid count
+  const countValue = count !== undefined ? Number(count) : undefined;
+
+  return {
+    count: countValue ?? 0,
+    isLoading: isLoading || isFetching,
+    hasLoaded: count !== undefined,
+  };
 }
 
 // Hook to get single voting details
@@ -190,10 +204,51 @@ export function useVotingOptions(votingId?: number) {
 
 // Hook to create voting
 export function useCreateVoting() {
-  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error, reset } = useWriteContract();
   const [isCreating, setIsCreating] = useState(false);
 
-  const createVoting = async (params: {
+  // Wait for transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Show pending toast when transaction is submitted
+  useEffect(() => {
+    if (hash && isPending) {
+      toastTxPending(hash);
+    }
+  }, [hash, isPending]);
+
+  // Show success toast when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toastTxSuccess(hash, "Voting created successfully!");
+    }
+  }, [isSuccess, hash]);
+
+  // Show error toast for confirmation errors
+  useEffect(() => {
+    if (confirmError && hash) {
+      toastTxError(hash, confirmError);
+    }
+  }, [confirmError, hash]);
+
+  // Show error toast for write errors
+  useEffect(() => {
+    if (error) {
+      if (isUserRejectedError(error)) {
+        toastUserRejected();
+      } else {
+        toastTxError(hash, error);
+      }
+    }
+  }, [error, hash]);
+
+  const createVoting = useCallback(async (params: {
     name: string;
     description: string;
     voteType: VoteType;
@@ -220,36 +275,85 @@ export function useCreateVoting() {
         maxVotersCount: BigInt(params.maxVotersCount),
       };
 
-      const hash = await writeContractAsync({
+      const txHash = await writeContractAsync({
         address: CONTRACTS.BALLOT,
         abi: BALLOT_ABI,
         functionName: 'createVoting',
         args: [config, params.optionNames, params.optionDescriptions],
       });
 
-      return hash;
+      return txHash;
     } finally {
       setIsCreating(false);
     }
-  };
+  }, [writeContractAsync]);
 
   return {
     createVoting,
     isCreating,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: error || confirmError,
+    reset,
   };
 }
 
 // Hook to cast vote with FHE encryption
 export function useCastVote() {
   const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error, reset } = useWriteContract();
   const [isVoting, setIsVoting] = useState(false);
+  const [isEncrypting, setIsEncrypting] = useState(false);
 
-  const castVote = async (votingId: number, optionIndex: number) => {
+  // Wait for transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Show pending toast when transaction is submitted
+  useEffect(() => {
+    if (hash && isPending) {
+      toastTxPending(hash);
+    }
+  }, [hash, isPending]);
+
+  // Show success toast when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toastTxSuccess(hash, "Vote cast successfully! Your encrypted vote has been recorded.");
+    }
+  }, [isSuccess, hash]);
+
+  // Show error toast for confirmation errors
+  useEffect(() => {
+    if (confirmError && hash) {
+      toastTxError(hash, confirmError);
+    }
+  }, [confirmError, hash]);
+
+  // Show error toast for write errors
+  useEffect(() => {
+    if (error) {
+      if (isUserRejectedError(error)) {
+        toastUserRejected();
+      } else {
+        toastTxError(hash, error);
+      }
+    }
+  }, [error, hash]);
+
+  const castVote = useCallback(async (votingId: number, optionIndex: number) => {
     if (!address) throw new Error('Wallet not connected');
 
     try {
       setIsVoting(true);
+      setIsEncrypting(true);
 
       // Encrypt the vote option index using FHE
       const { handle: encryptedVote, inputProof: proof } = await encryptUint32(
@@ -258,30 +362,41 @@ export function useCastVote() {
         optionIndex
       );
 
+      setIsEncrypting(false);
+
       // Cast vote on-chain
-      const hash = await writeContractAsync({
+      const txHash = await writeContractAsync({
         address: CONTRACTS.BALLOT,
         abi: BALLOT_ABI,
         functionName: 'castVote',
         args: [BigInt(votingId), encryptedVote, proof],
       });
 
-      return hash;
+      return txHash;
+    } catch (err) {
+      setIsEncrypting(false);
+      throw err;
     } finally {
       setIsVoting(false);
     }
-  };
+  }, [address, writeContractAsync]);
 
   return {
     castVote,
     isVoting,
+    isEncrypting,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: error || confirmError,
+    reset,
   };
 }
 
 // Hook to get all votings (iterate through all voting IDs)
 export function useAllVotings() {
   const { count } = useVotingCount();
-  const [votings, setVotings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // We'll need to manually fetch each voting details
