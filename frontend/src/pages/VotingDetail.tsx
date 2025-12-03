@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, ArrowLeft, ShieldCheck, Clock, CheckCircle2, Lock } from "lucide-react";
 import { useParams, Link, Navigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import {
   useVotingDetails,
@@ -62,10 +62,26 @@ const VotingDetail = () => {
   const { isConnected } = useAccount();
   const { config, status, totalVoters, hasVoted, refetchAll } = useVotingDetails(votingId);
   const { options, isLoading: optionsLoading, error: optionsError } = useVotingOptions(votingId);
-  const { castVote, isVoting } = useCastVote();
+  const {
+    castVote,
+    isVoting,
+    isEncrypting,
+    isPending,
+    isConfirming,
+    isSuccess,
+    reset,
+  } = useCastVote();
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Refetch voting data when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess) {
+      setSelectedOption(null);
+      refetchAll();
+      reset();
+    }
+  }, [isSuccess, refetchAll, reset]);
 
   const configData = useMemo(() => {
     if (!config) return null;
@@ -95,6 +111,7 @@ const VotingDetail = () => {
 
   const statusMeta = getStatusLabel(status);
   const isActive = status === VotingStatus.Active;
+  const isSubmitting = isEncrypting || isPending || isConfirming || isVoting;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -120,21 +137,11 @@ const VotingDetail = () => {
     }
 
     try {
-      setIsSubmitting(true);
-      const txHash = await castVote(votingId, selectedOption);
-      toast.success("Vote submitted! Your encrypted vote has been recorded.", {
-        action: {
-          label: "View Tx",
-          onClick: () => window.open(`https://sepolia.etherscan.io/tx/${txHash}`, "_blank", "noopener,noreferrer"),
-        },
-      });
-      setSelectedOption(null);
-      refetchAll();
+      await castVote(votingId, selectedOption);
+      // Toast notifications are handled by the hook
     } catch (error: any) {
+      // Error toasts are handled by the hook
       console.error("Failed to cast vote:", error);
-      toast.error(error?.shortMessage || error?.message || "Failed to cast encrypted vote.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -300,16 +307,25 @@ const VotingDetail = () => {
                   disabled={
                     selectedOption === null ||
                     isSubmitting ||
-                    isVoting ||
                     !isConnected ||
                     hasVoted ||
                     !isActive
                   }
                 >
-                  {isSubmitting || isVoting ? (
+                  {isEncrypting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Encrypting & submitting
+                      Encrypting vote...
+                    </>
+                  ) : isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Confirm in Wallet...
+                    </>
+                  ) : isConfirming ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Confirming...
                     </>
                   ) : (
                     "Cast Vote"
