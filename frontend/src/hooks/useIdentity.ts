@@ -1,39 +1,48 @@
-import { useReadContract, useWriteContract } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACTS, IDENTITY_VAULT_ABI } from '@/lib/contracts';
 import { encryptData } from '@/lib/fhe';
 import { useAccount } from 'wagmi';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { countryCodeToNumeric } from '@/lib/countries';
+import {
+  toastTxPending,
+  toastTxSuccess,
+  toastTxError,
+  toastUserRejected,
+  isUserRejectedError,
+} from '@/lib/toast-utils';
 
 export function useIdentity() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
 
   // Read: Check if user has identity
   const {
     data: hasIdentityData,
     refetch: refetchHasIdentity,
-    status: hasIdentityStatus,
+    isLoading: hasIdentityLoading,
+    isFetching: hasIdentityFetching,
   } = useReadContract({
     address: CONTRACTS.IDENTITY_VAULT,
     abi: IDENTITY_VAULT_ABI,
     functionName: 'hasIdentity',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && isConnected,
     },
   });
 
   // Read: Get identity plaintext data (domicile, tier, etc.)
   const {
     data: identityPlaintext,
-    status: identityStatus,
+    isLoading: identityLoading,
+    isFetching: identityFetching,
   } = useReadContract({
     address: CONTRACTS.IDENTITY_VAULT,
     abi: IDENTITY_VAULT_ABI,
     functionName: 'getPlaintextData',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && Boolean(hasIdentityData),
+      enabled: !!address && isConnected && Boolean(hasIdentityData),
     },
   });
 
@@ -69,21 +78,67 @@ export function useIdentity() {
     };
   }, [identityPlaintext]);
 
+  // Only show loading when wallet is connected and queries are actually fetching
+  const isLoading = isConnected && (hasIdentityLoading || hasIdentityFetching ||
+    (Boolean(hasIdentityData) && (identityLoading || identityFetching)));
+
   return {
     hasIdentity: Boolean(hasIdentityData),
     identity,
     identityData: identity,
-    isLoading: hasIdentityStatus === 'pending' || identityStatus === 'pending',
+    isLoading,
+    isConnected,
     refetchHasIdentity,
   };
 }
 
 export function useCreateIdentity() {
   const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error, reset } = useWriteContract();
   const [isEncrypting, setIsEncrypting] = useState(false);
 
-  const createIdentity = async (params: {
+  // Wait for transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Show pending toast when transaction is submitted
+  useEffect(() => {
+    if (hash && isPending) {
+      toastTxPending(hash);
+    }
+  }, [hash, isPending]);
+
+  // Show success toast when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toastTxSuccess(hash, "Identity created successfully!");
+    }
+  }, [isSuccess, hash]);
+
+  // Show error toast for confirmation errors
+  useEffect(() => {
+    if (confirmError && hash) {
+      toastTxError(hash, confirmError);
+    }
+  }, [confirmError, hash]);
+
+  // Show error toast for write errors
+  useEffect(() => {
+    if (error) {
+      if (isUserRejectedError(error)) {
+        toastUserRejected();
+      } else {
+        toastTxError(hash, error);
+      }
+    }
+  }, [error, hash]);
+
+  const createIdentity = useCallback(async (params: {
     netWorth: number;
     domicile: string;
     tier: number;
@@ -110,7 +165,7 @@ export function useCreateIdentity() {
       const domicileCode = countryCodeToNumeric(params.domicile);
       const pep = params.isPEP ? 1 : 0;
 
-      const hash = await writeContractAsync({
+      const txHash = await writeContractAsync({
         address: CONTRACTS.IDENTITY_VAULT,
         abi: IDENTITY_VAULT_ABI,
         functionName: 'createIdentity',
@@ -125,28 +180,78 @@ export function useCreateIdentity() {
         ],
       });
 
-      return hash;
-    } catch (error) {
+      return txHash;
+    } catch (err) {
       setIsEncrypting(false);
-      throw error;
+      throw err;
     }
-  };
+  }, [address, writeContractAsync]);
 
   return {
     createIdentity,
     isEncrypting,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: error || confirmError,
+    reset,
   };
 }
 
 export function useUpdateIdentity() {
   const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error, reset } = useWriteContract();
   const [isEncrypting, setIsEncrypting] = useState(false);
 
-  const updateIdentity = async (params: {
+  // Wait for transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Show pending toast when transaction is submitted
+  useEffect(() => {
+    if (hash && isPending) {
+      toastTxPending(hash);
+    }
+  }, [hash, isPending]);
+
+  // Show success toast when transaction is confirmed
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toastTxSuccess(hash, "Identity updated successfully!");
+    }
+  }, [isSuccess, hash]);
+
+  // Show error toast for confirmation errors
+  useEffect(() => {
+    if (confirmError && hash) {
+      toastTxError(hash, confirmError);
+    }
+  }, [confirmError, hash]);
+
+  // Show error toast for write errors
+  useEffect(() => {
+    if (error) {
+      if (isUserRejectedError(error)) {
+        toastUserRejected();
+      } else {
+        toastTxError(hash, error);
+      }
+    }
+  }, [error, hash]);
+
+  const updateIdentity = useCallback(async (params: {
     netWorth: number;
     domicile: string;
+    tier: number;
     isPEP: boolean;
+    watchlist: number;
+    riskScore: number;
   }) => {
     if (!address) throw new Error('Wallet not connected');
 
@@ -163,7 +268,7 @@ export function useUpdateIdentity() {
       setIsEncrypting(false);
 
       // Update identity on-chain
-      const hash = await writeContractAsync({
+      const txHash = await writeContractAsync({
         address: CONTRACTS.IDENTITY_VAULT,
         abi: IDENTITY_VAULT_ABI,
         functionName: 'updateIdentity',
@@ -171,19 +276,28 @@ export function useUpdateIdentity() {
           encryptedNetWorth,
           netWorthProof,
           countryCodeToNumeric(params.domicile),
-          params.isPEP,
+          params.tier,
+          params.isPEP ? 1 : 0,
+          params.watchlist,
+          params.riskScore,
         ],
       });
 
-      return hash;
-    } catch (error) {
+      return txHash;
+    } catch (err) {
       setIsEncrypting(false);
-      throw error;
+      throw err;
     }
-  };
+  }, [address, writeContractAsync]);
 
   return {
     updateIdentity,
     isEncrypting,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: error || confirmError,
+    reset,
   };
 }
