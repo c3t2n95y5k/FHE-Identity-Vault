@@ -76,8 +76,8 @@ const formatEndTimeLabel = (timestamp: number) => {
 const Index = () => {
   const { address } = useAccount();
   const publicClient = usePublicClient();
-  const { hasIdentity, identity, isLoading: identityLoading } = useIdentity();
-  const { count: votingCount } = useVotingCount();
+  const { hasIdentity, identity, isLoading: identityLoading, isConnected } = useIdentity();
+  const { count: votingCount, hasLoaded: votingCountLoaded } = useVotingCount();
 
   const {
     data: totalIdentitiesData,
@@ -93,7 +93,9 @@ const Index = () => {
 
   useEffect(() => {
     if (!publicClient) return;
-    if (!votingCount) {
+    // Wait until votingCount is actually loaded before deciding
+    if (!votingCountLoaded) return;
+    if (votingCount === 0) {
       setVotings([]);
       setVotingsLoading(false);
       return;
@@ -191,7 +193,7 @@ const Index = () => {
     return () => {
       cancelled = true;
     };
-  }, [address, publicClient, votingCount]);
+  }, [address, publicClient, votingCount, votingCountLoaded]);
 
   const totalIdentities =
     totalIdentitiesStatus === "success"
@@ -228,6 +230,18 @@ const Index = () => {
   }, [votings]);
 
   const identityCard = () => {
+    // Show connect wallet prompt when not connected
+    if (!isConnected) {
+      return (
+        <Card className="p-6 border-dashed text-center text-muted-foreground">
+          <p className="text-lg font-semibold mb-2">Connect your wallet</p>
+          <p className="text-sm">
+            Connect your wallet to view your identity or create a new one.
+          </p>
+        </Card>
+      );
+    }
+
     if (identityLoading) {
       return (
         <Card className="p-6 flex items-center justify-center text-muted-foreground">
