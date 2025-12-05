@@ -6,10 +6,10 @@
   **Privacy-First Identity & Governance Platform**
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Powered by Zama](https://img.shields.io/badge/Powered%20by-Zama%20FHE-blue)](https://www.zama.ai/)
+  [![Powered by Zama](https://img.shields.io/badge/Powered%20by-Zama%20fhEVM%200.9.1-blue)](https://www.zama.ai/)
   [![Sepolia Testnet](https://img.shields.io/badge/Network-Sepolia-purple)](https://sepolia.etherscan.io/)
 
-  [Live Demo](#) | [Documentation](#) | [Architecture](#architecture)
+  [🚀 Live Demo](https://fhe-identity-vault.vercel.app) | [📖 Documentation](#-getting-started) | [🏗️ Architecture](#️-architecture)
 </div>
 
 ---
@@ -83,9 +83,10 @@ function vote(uint256 choice) public {
     votes[choice]++; // ❌ Vote is public!
 }
 
-// FHE approach (private voting)
-function castVote(uint256 votingId, inEuint32 calldata encryptedChoice) public {
-    euint32 choice = FHE.asEuint32(encryptedChoice);
+// FHE approach (private voting) - fhEVM 0.9.1
+function castVote(uint256 votingId, externalEuint32 encryptedChoice, bytes calldata proof) public {
+    euint32 choice = FHE.fromExternal(encryptedChoice, proof);
+    FHE.allowThis(choice);
     // ✅ Vote remains encrypted, but can still be counted!
     encryptedTally[votingId] = FHE.add(encryptedTally[votingId], choice);
 }
@@ -107,7 +108,7 @@ function castVote(uint256 votingId, inEuint32 calldata encryptedChoice) public {
 
 ```mermaid
 graph TD
-    User[👤 User Wallet<br/>MetaMask] --> SDK[🔐 Zama FHE SDK<br/>fhevmjs]
+    User[👤 User Wallet<br/>MetaMask] --> SDK[🔐 Zama FHE SDK<br/>Relayer SDK 0.3.0-5]
     SDK --> Frontend[⚛️ React Client<br/>Frontend DApp]
     Frontend -->|Encrypted Data| Blockchain[📦 Ethereum Sepolia Testnet]
 
@@ -159,7 +160,7 @@ graph TD
 sequenceDiagram
     participant U as 👤 用户
     participant F as ⚛️ 前端 DApp
-    participant SDK as 🔐 fhevmjs SDK
+    participant SDK as 🔐 Relayer SDK
     participant BC as 📦 FHEBallot 合约
     participant GW as 🚪 Zama Gateway
 
@@ -205,22 +206,30 @@ sequenceDiagram
 - **Privy SDK** - Alternative auth provider
 
 ### Blockchain & Encryption
-- **Solidity 0.8.19** - Smart contract language
-- **Zama fhEVM** - FHE-enabled EVM
-- **fhevmjs** - Client-side FHE operations
+- **Solidity 0.8.24** - Smart contract language
+- **Zama fhEVM 0.9.1** - FHE-enabled EVM
+- **Relayer SDK 0.3.0-5** - Client-side FHE operations via CDN
 - **Hardhat** - Development environment
 - **Sepolia Testnet** - Ethereum test network
 
 ### Key Dependencies
 \`\`\`json
 {
-  "fhevmjs": "^0.8.0",
-  "@fhevm/solidity": "^0.1.0",
-  "wagmi": "^2.x",
-  "viem": "^2.x",
-  "@rainbow-me/rainbowkit": "^2.x"
+  "@fhevm/solidity": "^0.9.1",
+  "@zama-fhe/relayer-sdk": "0.3.0-5",
+  "wagmi": "^2.18.2",
+  "viem": "^2.38.4",
+  "@rainbow-me/rainbowkit": "^2.2.9"
 }
 \`\`\`
+
+### Deployed Contracts (Sepolia Testnet)
+
+| Contract | Address | Etherscan |
+|----------|---------|-----------|
+| FHEIdentityVault | \`0x4491d6F0a5C3c1E8D379C034BBCCda057b6736dd\` | [View](https://sepolia.etherscan.io/address/0x4491d6F0a5C3c1E8D379C034BBCCda057b6736dd) |
+| FHEBallot | \`0x79A0B5B310313143d3230d2D16EDE4C4DaaF3ac4\` | [View](https://sepolia.etherscan.io/address/0x79A0B5B310313143d3230d2D16EDE4C4DaaF3ac4) |
+| FHEQuadraticVoting | \`0x1f922540bb5EBCb385450A707A4904AF1BDB74B1\` | [View](https://sepolia.etherscan.io/address/0x1f922540bb5EBCb385450A707A4904AF1BDB74B1) |
 
 ---
 
@@ -255,17 +264,17 @@ cd contracts && npm install && cd ..
 Create \`frontend/.env\`:
 
 \`\`\`env
-# Contract Addresses
-VITE_IDENTITY_VAULT_ADDRESS=0x6F9d93A540Ad88eEF3EACB1FaF11aEcE2700F3C2
-VITE_BALLOT_ADDRESS=0xdb87F76ceA345f6fC0eCA788470Ccd5633071b3D
-VITE_QUADRATIC_VOTING_ADDRESS=0x7c71bed2b28bB691fd1c94985436cEFc3997b609
+# Contract Addresses (Sepolia Testnet - Deployed 2025-12-06)
+VITE_IDENTITY_VAULT_ADDRESS=0x4491d6F0a5C3c1E8D379C034BBCCda057b6736dd
+VITE_BALLOT_ADDRESS=0x79A0B5B310313143d3230d2D16EDE4C4DaaF3ac4
+VITE_QUADRATIC_VOTING_ADDRESS=0x1f922540bb5EBCb385450A707A4904AF1BDB74B1
 
 # Network Configuration
 VITE_CHAIN_ID=11155111
 VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 VITE_GATEWAY_URL=https://gateway.sepolia.zama.ai
 
-# Wallet Connect
+# WalletConnect (Optional - get from https://cloud.walletconnect.com/)
 VITE_WALLETCONNECT_PROJECT_ID=your_project_id_here
 \`\`\`
 
@@ -382,7 +391,7 @@ FHE-Identity-Vault/
 
 ### 第二阶段：核心功能 (已完成 ✅)
 - [x] 加密身份创建与管理
-- [x] 客户端 FHE 加密（fhevmjs）
+- [x] 客户端 FHE 加密（Relayer SDK）
 - [x] 多种投票类型实现
 - [x] 时间门控投票周期
 - [x] 白名单管理系统
@@ -390,17 +399,22 @@ FHE-Identity-Vault/
 - [x] 通过 Gateway 解密结果
 - [x] Tailwind CSS 响应式 UI
 
-### 第三阶段：增强治理 (进行中 🔄)
+### 第三阶段：增强治理 (已完成 ✅)
 - [x] 从合约读取真实投票数据
 - [x] FHE 加密投票
 - [x] 投票详情页面与实时结果
+- [x] 迁移至 fhEVM 0.9.1
+- [x] 交易通知系统（带 Etherscan 链接）
+- [x] Vercel 生产环境部署
+
+### 第四阶段：治理增强 (进行中 🔄)
 - [ ] 治理管理仪表板
 - [ ] 投票数据分析与统计
 - [ ] 投票委托系统
 - [ ] 提案创建 UI
 - [ ] 多签名投票结果验证
 
-### 第四阶段：高级功能 🔮
+### 第五阶段：高级功能 🔮
 - [ ] **身份验证**：集成真实 KYC 服务商
 - [ ] **跨链支持**：桥接至 Polygon、Arbitrum
 - [ ] **DAO 模板**：预构建的治理结构
@@ -409,7 +423,7 @@ FHE-Identity-Vault/
 - [ ] **IPFS 集成**：去中心化提案存储
 - [ ] **ENS 支持**：人类可读地址
 
-### 第五阶段：企业级与规模化 🔮
+### 第六阶段：企业级与规模化 🔮
 - [ ] **API 平台**：第三方集成 REST API
 - [ ] **白标解决方案**：可定制企业版
 - [ ] **审计与安全**：专业智能合约审计
@@ -418,7 +432,7 @@ FHE-Identity-Vault/
 - [ ] **质押机制**：质押代币获得投票权
 - [ ] **金库管理**：DAO 多签金库
 
-### 第六阶段：生态系统增长 🔮
+### 第七阶段：生态系统增长 🔮
 - [ ] **SDK 发布**：开发者集成工具包
 - [ ] **插件系统**：可扩展投票机制
 - [ ] **市场平台**：治理模板和模块
@@ -503,7 +517,7 @@ await castVote(
 - FHE computations are more expensive than plaintext (higher gas costs)
 - Decryption requires Zama Gateway (centralized dependency)
 - Currently limited to Sepolia testnet
-- Maximum encrypted integer size: \`euint32\` (0 to 2^32-1)
+- Supported encrypted integer types: \`euint8\`, \`euint32\`, \`euint64\`, \`ebool\`
 
 ---
 
